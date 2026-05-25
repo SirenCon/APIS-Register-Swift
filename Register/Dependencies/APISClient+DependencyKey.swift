@@ -7,6 +7,7 @@ import Combine
 import ComposableArchitecture
 import Foundation
 import MQTTNIO
+import Network
 
 extension ApisClient {
   private static func url(_ host: String) throws -> URL {
@@ -15,6 +16,70 @@ extension ApisClient {
     }
 
     return url
+  }
+
+  private static func mqttErrorMessage(_ error: Error) -> String {
+    if let mqttError = error as? MQTTError {
+      switch mqttError {
+      case .timeout:
+        return "Could not subscribe to events: connection timed out."
+      case .websocketUpgradeFailed:
+        return "Could not subscribe to events: WebSocket upgrade failed. Check MQTT host and port."
+      case .reasonError(let code):
+        switch code {
+        case .badUsernameOrPassword, .notAuthorized:
+          return "Could not subscribe to events: invalid credentials or not authorized."
+        case .badAuthenticationMethod:
+          return "Could not subscribe to events: authentication method rejected. Check JWT secret."
+        case .serverUnavailable, .serverBusy:
+          return "Could not subscribe to events: MQTT server is unavailable."
+        case .banned:
+          return "Could not subscribe to events: this client has been banned by the server."
+        case .serverShuttingDown:
+          return "Could not subscribe to events: server is shutting down."
+        default:
+          return "Could not subscribe to events: \(error.localizedDescription)"
+        }
+      case .connectionError(let returnValue):
+        switch returnValue {
+        case .badUserNameOrPassword:
+          return "Could not subscribe to events: invalid username or password."
+        case .notAuthorized:
+          return "Could not subscribe to events: not authorized to connect."
+        case .serverUnavailable:
+          return "Could not subscribe to events: MQTT server is unavailable."
+        case .unacceptableProtocolVersion:
+          return "Could not subscribe to events: unacceptable MQTT protocol version."
+        case .identifierRejected:
+          return "Could not subscribe to events: client identifier was rejected."
+        default:
+          return "Could not subscribe to events: \(error.localizedDescription)"
+        }
+      case .noConnection, .serverClosedConnection:
+        return "Could not subscribe to events: connection was lost."
+      case .serverDisconnection:
+        return "Could not subscribe to events: server disconnected unexpectedly."
+      default:
+        return "Could not subscribe to events: \(error.localizedDescription)"
+      }
+    }
+
+    // On iOS, transport-level failures (refused, timed out) surface as NWError
+    // from Network.framework (NIOTransportServices is always used on iOS).
+    if let nwError = error as? NWError, case .posix(let code) = nwError {
+      switch code {
+      case .ECONNREFUSED:
+        return "Could not subscribe to events: connection refused. Check MQTT host and port."
+      case .ETIMEDOUT:
+        return "Could not subscribe to events: connection timed out."
+      case .ECONNRESET:
+        return "Could not subscribe to events: connection reset by peer."
+      default:
+        return "Could not subscribe to events: \(error.localizedDescription)"
+      }
+    }
+
+    return "Could not subscribe to events: \(error.localizedDescription)"
   }
 
   private static func makeHttpRequest<Req: Encodable, Resp: Decodable>(
@@ -168,7 +233,7 @@ extension ApisClient: DependencyKey {
         } catch {
           Self.logger.error("Got MQTT error: \(error, privacy: .public)")
           try? client.syncShutdownGracefully()
-          await sub(.failure(ApisError.subscriptionError))
+          await sub(.failure(ApisError.subscriptionError(Self.mqttErrorMessage(error))))
         }
       }
     }

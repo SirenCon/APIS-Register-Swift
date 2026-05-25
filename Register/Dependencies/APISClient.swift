@@ -150,7 +150,7 @@ struct SquareCompletedTransaction: Equatable, Codable {
 enum ApisError: LocalizedError {
   case invalidHost
   case badResponse(Int)
-  case subscriptionError
+  case subscriptionError(String)
   case unknownEvent
 
   var errorDescription: String? {
@@ -159,8 +159,8 @@ enum ApisError: LocalizedError {
       return "API host did not appear to be a valid URL."
     case .badResponse(let statusCode):
       return "Got wrong status code from API: \(statusCode)."
-    case .subscriptionError:
-      return "Could not subscribe to events."
+    case .subscriptionError(let detail):
+      return detail
     case .unknownEvent:
       return "Got unknown event."
     }

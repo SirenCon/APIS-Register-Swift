@@ -322,6 +322,24 @@ struct RegSetupFeature {
             ))
         }
       }
+    } catch let error as DecodingError {
+      let message: String
+      switch error {
+        case .keyNotFound(let key, _):
+          message = "Missing required field '\(key.stringValue)'."
+        case .valueNotFound(_, let context):
+          let field = context.codingPath.last?.stringValue ?? "unknown field"
+          message = "No value found for field '\(field)'."
+        case .typeMismatch(_, let context):
+          let field = context.codingPath.last?.stringValue ?? "unknown field"
+          message = "Wrong type for field '\(field)'."
+        case .dataCorrupted(let context):
+          message = "Invalid data: \(context.debugDescription)"
+        @unknown default:
+          message = error.localizedDescription
+      }
+      state.setAlert(title: "QR Code Error", message: message)
+      return .none
     } catch {
       state.setAlert(
         title: "QR Code Error",

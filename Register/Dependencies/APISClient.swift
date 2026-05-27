@@ -9,6 +9,36 @@ import os
 
 // MARK: API models
 
+struct WaiverData: Equatable, Codable {
+  let orderReference: String
+  let name: String
+  let address: String
+  let city: String
+  let state: String
+  let zipcode: String
+  let date: String
+  let emergencyContactName: String
+  let emergencyContactRelationship: String
+  let emergencyContactPhone: String
+  /// MQTT topic the iOS app should publish the signed result to.
+  /// The admin frontend subscribes to this topic and relays the signature to the backend.
+  let replyTopic: String
+
+  static let mock = Self(
+    orderReference: "MOCK-REF",
+    name: "John Doe",
+    address: "123 Main St",
+    city: "Rhinelander",
+    state: "WI",
+    zipcode: "54501",
+    date: "2026-05-27",
+    emergencyContactName: "Jane Doe",
+    emergencyContactRelationship: "Spouse",
+    emergencyContactPhone: "555-867-5309",
+    replyTopic: "apis/admin/mock-terminal/waiverSigned"
+  )
+}
+
 enum TerminalEvent: Equatable, Codable {
   case connected
   case open, close, ready
@@ -17,6 +47,7 @@ enum TerminalEvent: Equatable, Codable {
   case updateCart(cart: TerminalCart)
   case updateToken(accessToken: String)
   case updateConfig(config: Config)
+  case promptWaiver(waiverData: WaiverData)
 }
 
 struct TerminalBadge: Identifiable, Equatable, Codable {
@@ -175,6 +206,9 @@ struct ApisClient {
 
   var requestSquareToken: (Config) async throws -> Void
   var squareTransactionCompleted: (Config, SquareCompletedTransaction) async throws -> Bool
+  /// Publish the signed waiver signature over MQTT so the admin frontend can relay it to the backend.
+  /// Parameters: config, orderReference, signaturePngBase64, replyTopic
+  var publishWaiverSigned: (Config, String, String, String) async throws -> Void
 
   var subscribeToEvents: (Config) throws -> Effect<TaskResult<TerminalEvent>>
 }
@@ -183,6 +217,7 @@ extension ApisClient: TestDependencyKey {
   static var previewValue = Self(
     requestSquareToken: { _ in },
     squareTransactionCompleted: { _, _ in true },
+    publishWaiverSigned: { _, _, _, _ in },
     subscribeToEvents: { _ in .none }
   )
 

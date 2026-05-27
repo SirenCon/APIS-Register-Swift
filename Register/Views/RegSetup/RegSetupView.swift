@@ -19,11 +19,11 @@ struct RegSetupFeature {
   @Dependency(\.uuid) var uuid
 
   enum Mode: Equatable {
-    case acceptPayments, close, setup
+    case acceptPayments, close, setup, waiver
 
     var isPresenting: Bool {
       switch self {
-      case .acceptPayments, .close:
+      case .acceptPayments, .close, .waiver:
         return true
       default:
         return false
@@ -46,6 +46,7 @@ struct RegSetupFeature {
     var squareWasInitialized = false
 
     var isPresentingPayment = false
+    var isPresentingWaiver = false
   }
 
   @ObservableState
@@ -59,6 +60,7 @@ struct RegSetupFeature {
 
     var squareSetupState: SquareSetupFeature.State? = nil
     var paymentState: PaymentFeature.State? = nil
+    var waiverState: WaiverFeature.State? = nil
 
     mutating func setAlert(title: String, message: String) {
       alert = AlertState {
@@ -96,6 +98,7 @@ struct RegSetupFeature {
     case squareSetupAction(SquareSetupFeature.Action)
     case squareCheckoutAction(SquareCheckoutAction)
     case paymentAction(PaymentFeature.Action)
+    case waiverAction(WaiverFeature.Action)
 
     enum Alert: Equatable {
       case dismiss
@@ -283,6 +286,17 @@ struct RegSetupFeature {
         return .none
       case .paymentAction:
         return .none
+
+      case .waiverAction(.cancel):
+        state.regState.mode = .setup
+        state.waiverState = nil
+        return .none
+      case .waiverAction(.submitResult(.success)):
+        state.regState.mode = .setup
+        state.waiverState = nil
+        return .none
+      case .waiverAction:
+        return .none
       }
     }
     .ifLet(\.$alert, action: \.alert)
@@ -291,6 +305,9 @@ struct RegSetupFeature {
     }
     .ifLet(\.paymentState, action: \.paymentAction) {
       PaymentFeature()
+    }
+    .ifLet(\.waiverState, action: \.waiverAction) {
+      WaiverFeature()
     }
     #if DEBUG
       ._printChanges()
@@ -515,6 +532,15 @@ struct RegSetupFeature {
       }
 
       return .concatenate(events)
+    case .success(.promptWaiver(let waiverData)):
+      guard let config = state.config else {
+        state.setAlert(title: "Error", message: "No configuration loaded.")
+        return .none
+      }
+      state.waiverState = WaiverFeature.State(config: config, waiverData: waiverData)
+      state.regState.mode = .waiver
+      return .none
+
     case .failure(let error):
       state.setAlert(
         title: "Event Error",
@@ -619,6 +645,11 @@ struct RegSetupView: View {
           case .close:
             ClosedView(themeColor: store.config?.parsedColor ?? Register.fallbackThemeColor)
               .persistentSystemOverlays(.hidden)
+
+          case .waiver:
+            if let store = store.scope(state: \.waiverState, action: \.waiverAction) {
+              WaiverView(store: store)
+            }
 
           default:
             Text("Invalid Mode!")

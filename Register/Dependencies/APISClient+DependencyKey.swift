@@ -7,6 +7,7 @@ import Combine
 import ComposableArchitecture
 import Foundation
 import MQTTNIO
+import NIOCore
 import Network
 
 extension ApisClient {
@@ -152,6 +153,60 @@ extension ApisClient: DependencyKey {
       )
 
       return resp.success
+    },
+    publishWaiverSigned: { config, orderReference, signaturePngBase64, replyTopic in
+      struct WaiverSignedPayload: Encodable {
+        let orderReference: String
+        let signature: String
+      }
+
+      let payload = WaiverSignedPayload(orderReference: orderReference, signature: signaturePngBase64)
+      let jsonData = try JSONEncoder().encode(payload)
+
+      // Resolve host and build MQTT config (same WSS logic as subscribeToEvents)
+      var host = config.mqttHost
+      var mqttConfig = MQTTClient.Configuration(
+        version: .v5_0,
+        userName: config.mqttUsername,
+        password: config.mqttPassword
+      )
+
+      if let url = URL(string: host), url.scheme == "wss" {
+        mqttConfig = .init(
+          version: .v5_0,
+          userName: config.mqttUsername,
+          password: config.mqttPassword,
+          useSSL: true,
+          webSocketConfiguration: .init(urlPath: url.path())
+        )
+        host = url.host() ?? config.mqttHost
+      }
+
+      // Use a distinct client ID so the publish client doesn't clash with the
+      // long-lived subscriber connection.
+      let client = MQTTClient(
+        host: host,
+        port: config.mqttPort,
+        identifier: "terminal-\(config.terminalName.lowercased())-waiver-pub",
+        eventLoopGroupProvider: .createNew,
+        configuration: mqttConfig
+      )
+
+      do {
+        _ = try await client.v5.connect(
+          cleanStart: true,
+          properties: [.sessionExpiryInterval(0)]
+        )
+        try await client.v5.publish(
+          to: replyTopic,
+          payload: ByteBuffer(data: jsonData),
+          qos: .atLeastOnce
+        )
+      } catch {
+        try? client.syncShutdownGracefully()
+        throw error
+      }
+      try? client.syncShutdownGracefully()
     },
     subscribeToEvents: { config in
       var host = config.mqttHost

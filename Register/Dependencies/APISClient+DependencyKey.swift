@@ -154,13 +154,14 @@ extension ApisClient: DependencyKey {
 
       return resp.success
     },
-    publishWaiverSigned: { config, orderReference, signaturePngBase64, replyTopic in
+    publishWaiverSigned: { config, orderReference, signaturePngBase64, replyTopic, emailCopy in
       struct WaiverSignedPayload: Encodable {
         let orderReference: String
         let signature: String
+        let emailCopy: Bool
       }
 
-      let payload = WaiverSignedPayload(orderReference: orderReference, signature: signaturePngBase64)
+      let payload = WaiverSignedPayload(orderReference: orderReference, signature: signaturePngBase64, emailCopy: emailCopy)
       let jsonData = try JSONEncoder().encode(payload)
 
       // Resolve host and build MQTT config (same WSS logic as subscribeToEvents)

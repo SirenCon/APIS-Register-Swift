@@ -40,6 +40,7 @@ struct RegSetupFeature {
     var lastEvent: Date? = nil
 
     var mode = Mode.setup
+    var previousMode = Mode.setup
 
     var isConfiguringSquare = false
     var squareIsReady = false
@@ -290,22 +291,22 @@ struct RegSetupFeature {
         return .none
 
       case .waiverAction(.cancel):
-        state.regState.mode = .setup
+        state.regState.mode = state.regState.previousMode
         state.waiverState = nil
         return .none
       case .waiverAction(.submitResult(.success)):
-        state.regState.mode = .setup
+        state.regState.mode = state.regState.previousMode
         state.waiverState = nil
         return .none
       case .waiverAction:
         return .none
 
       case .emergencyContactAction(.cancel):
-        state.regState.mode = .setup
+        state.regState.mode = state.regState.previousMode
         state.emergencyContactState = nil
         return .none
       case .emergencyContactAction(.confirmResult(.success)):
-        state.regState.mode = .setup
+        state.regState.mode = state.regState.previousMode
         state.emergencyContactState = nil
         return .none
       case .emergencyContactAction:
@@ -553,6 +554,7 @@ struct RegSetupFeature {
         state.setAlert(title: "Error", message: "No configuration loaded.")
         return .none
       }
+      state.regState.previousMode = state.regState.mode
       state.waiverState = WaiverFeature.State(config: config, waiverData: waiverData)
       state.regState.mode = .waiver
       return .none
@@ -562,6 +564,7 @@ struct RegSetupFeature {
         state.setAlert(title: "Error", message: "No configuration loaded.")
         return .none
       }
+      state.regState.previousMode = state.regState.mode
       state.emergencyContactState = EmergencyContactFeature.State(config: config, emergencyContactData: ecData)
       state.regState.mode = .emergencyContact
       return .none
@@ -657,7 +660,7 @@ struct RegSetupView: View {
       .fullScreenCover(
         isPresented: Binding(
           get: { store.regState.mode.isPresenting },
-          set: { _ in store.send(.setMode(.setup)) }
+          set: { _ in store.send(.setMode(store.regState.previousMode)) }
         ),
         content: {
           switch store.regState.mode {

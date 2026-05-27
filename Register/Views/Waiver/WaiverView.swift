@@ -23,6 +23,7 @@ struct WaiverFeature {
     var currentDragPoint: CGPoint? = nil
 
     var isSubmitting = false
+    var emailCopy = true
 
     @Presents var alert: AlertState<Action.Alert>?
   }
@@ -32,6 +33,7 @@ struct WaiverFeature {
     case clearSignature
     case dragChanged(startPoint: CGPoint, location: CGPoint)
     case dragEnded
+    case setEmailCopy(Bool)
     case submitTapped
     case submitResult(TaskResult<Bool>)
     case alert(PresentationAction<Alert>)
@@ -49,6 +51,10 @@ struct WaiverFeature {
       case .clearSignature:
         state.signaturePaths = []
         state.currentDragPoint = nil
+        return .none
+
+      case let .setEmailCopy(value):
+        state.emailCopy = value
         return .none
 
       case let .dragChanged(startPoint, location):
@@ -87,11 +93,12 @@ struct WaiverFeature {
         let orderReference = state.waiverData.orderReference
         let replyTopic = state.waiverData.replyTopic
         let paths = state.signaturePaths
+        let emailCopy = state.emailCopy
 
         return .run { send in
           do {
             let signatureBase64 = renderSignatureToPngBase64(paths: paths, size: CGSize(width: 600, height: 150))
-            try await apis.publishWaiverSigned(config, orderReference, signatureBase64, replyTopic)
+            try await apis.publishWaiverSigned(config, orderReference, signatureBase64, replyTopic, emailCopy)
             await send(.submitResult(.success(true)))
           } catch {
             await send(.submitResult(.failure(error)))
@@ -336,6 +343,11 @@ In exchange for participation in the activity of SirenCon organized by SirenConâ
         Text(store.waiverData.date).bold()
       }
     }
+
+    Toggle(
+      "Email me a copy of this waiver",
+      isOn: $store.emailCopy.sending(\.setEmailCopy)
+    )
     .padding(.bottom, 8)
   }
 

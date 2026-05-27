@@ -214,8 +214,8 @@ struct ApisClient {
   var requestSquareToken: (Config) async throws -> Void
   var squareTransactionCompleted: (Config, SquareCompletedTransaction) async throws -> Bool
   /// Publish the signed waiver signature over MQTT so the admin frontend can relay it to the backend.
-  /// Parameters: config, orderReference, signaturePngBase64, replyTopic
-  var publishWaiverSigned: (Config, String, String, String) async throws -> Void
+  /// Parameters: config, orderReference, signaturePngBase64, replyTopic, emailCopy
+  var publishWaiverSigned: (Config, String, String, String, Bool) async throws -> Void
   /// Publish emergency contact info over MQTT so the admin frontend can relay it to the backend.
   /// Parameters: config, orderReference, name, relationship, phone, replyTopic
   var publishEmergencyContactSaved: (Config, String, String, String, String, String) async throws -> Void
@@ -227,7 +227,7 @@ extension ApisClient: TestDependencyKey {
   static var previewValue = Self(
     requestSquareToken: { _ in },
     squareTransactionCompleted: { _, _ in true },
-    publishWaiverSigned: { _, _, _, _ in },
+    publishWaiverSigned: { _, _, _, _, _ in },
     publishEmergencyContactSaved: { _, _, _, _, _, _ in },
     subscribeToEvents: { _ in .none }
   )

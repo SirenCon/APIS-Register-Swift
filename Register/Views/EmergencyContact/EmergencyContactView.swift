@@ -166,5 +166,6 @@ struct EmergencyContactView: View {
       }
       .alert($store.scope(state: \.alert, action: \.alert))
     }
+    .preferredColorScheme(.light)
   }
 }

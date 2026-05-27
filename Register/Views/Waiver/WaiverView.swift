@@ -234,6 +234,7 @@ struct WaiverView: View {
         }
       }
     }
+    .preferredColorScheme(.light)
   }
 
   // MARK: Waiver text body

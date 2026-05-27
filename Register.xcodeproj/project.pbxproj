@@ -46,6 +46,7 @@
 		E1ED6318297A0F62005343A9 /* SquareSetupViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1ED6317297A0F62005343A9 /* SquareSetupViewTests.swift */; };
 		E1ED631A297A10BA005343A9 /* AVAudioSessionClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1ED6319297A10BA005343A9 /* AVAudioSessionClient.swift */; };
 		E1F0577A2D8A0000001F0001 /* WaiverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F0577B2D8A0000001F0002 /* WaiverView.swift */; };
+		E1F0577D2D8A0000001F0004 /* EmergencyContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F0577E2D8A0000001F0005 /* EmergencyContactView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -102,6 +103,7 @@
 		E1ED6317297A0F62005343A9 /* SquareSetupViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SquareSetupViewTests.swift; sourceTree = "<group>"; };
 		E1ED6319297A10BA005343A9 /* AVAudioSessionClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AVAudioSessionClient.swift; sourceTree = "<group>"; };
 		E1F0577B2D8A0000001F0002 /* WaiverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaiverView.swift; sourceTree = "<group>"; };
+		E1F0577E2D8A0000001F0005 /* EmergencyContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmergencyContactView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -208,6 +210,7 @@
 				E1ED630A297A0159005343A9 /* Payment */,
 				E1ED630D297A01A4005343A9 /* Closed */,
 				E1F0577C2D8A0000001F0003 /* Waiver */,
+			E1F0577F2D8A0000001F0006 /* EmergencyContact */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -296,6 +299,14 @@
 				E1F0577B2D8A0000001F0002 /* WaiverView.swift */,
 			);
 			path = Waiver;
+			sourceTree = "<group>";
+		};
+		E1F0577F2D8A0000001F0006 /* EmergencyContact */ = {
+			isa = PBXGroup;
+			children = (
+				E1F0577E2D8A0000001F0005 /* EmergencyContactView.swift */,
+			);
+			path = EmergencyContact;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -493,6 +504,7 @@
 				E1ED631A297A10BA005343A9 /* AVAudioSessionClient.swift in Sources */,
 				E1327EE92975C1D6001DF7D6 /* TwoColumnLayout.swift in Sources */,
 				E1F0577A2D8A0000001F0001 /* WaiverView.swift in Sources */,
+				E1F0577D2D8A0000001F0004 /* EmergencyContactView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

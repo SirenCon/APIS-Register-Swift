@@ -208,6 +208,64 @@ extension ApisClient: DependencyKey {
       }
       try? client.syncShutdownGracefully()
     },
+    publishEmergencyContactSaved: { config, orderReference, name, relationship, phone, replyTopic in
+      struct EmergencyContactPayload: Encodable {
+        let orderReference: String
+        let name: String
+        let relationship: String
+        let phone: String
+      }
+
+      let payload = EmergencyContactPayload(
+        orderReference: orderReference,
+        name: name,
+        relationship: relationship,
+        phone: phone
+      )
+      let jsonData = try JSONEncoder().encode(payload)
+
+      var host = config.mqttHost
+      var mqttConfig = MQTTClient.Configuration(
+        version: .v5_0,
+        userName: config.mqttUsername,
+        password: config.mqttPassword
+      )
+
+      if let url = URL(string: host), url.scheme == "wss" {
+        mqttConfig = .init(
+          version: .v5_0,
+          userName: config.mqttUsername,
+          password: config.mqttPassword,
+          useSSL: true,
+          webSocketConfiguration: .init(urlPath: url.path())
+        )
+        host = url.host() ?? config.mqttHost
+      }
+
+      let client = MQTTClient(
+        host: host,
+        port: config.mqttPort,
+        identifier: "terminal-\(config.terminalName.lowercased())-ec-pub",
+        eventLoopGroupProvider: .createNew,
+        configuration: mqttConfig
+      )
+
+      do {
+        _ = try await client.v5.connect(
+          cleanStart: true,
+          properties: [.sessionExpiryInterval(0)]
+        )
+        try await client.v5.publish(
+          to: replyTopic,
+          payload: ByteBuffer(data: jsonData),
+          qos: .atLeastOnce
+        )
+      } catch {
+        try? client.syncShutdownGracefully()
+        throw error
+      }
+      try? client.syncShutdownGracefully()
+    },
     subscribeToEvents: { config in
       var host = config.mqttHost
 

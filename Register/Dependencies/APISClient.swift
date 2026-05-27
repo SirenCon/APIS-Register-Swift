@@ -39,6 +39,12 @@ struct WaiverData: Equatable, Codable {
   )
 }
 
+struct EmergencyContactData: Equatable, Codable {
+  let orderReference: String
+  /// MQTT topic the iOS app should publish the collected contact info to.
+  let replyTopic: String
+}
+
 enum TerminalEvent: Equatable, Codable {
   case connected
   case open, close, ready
@@ -48,6 +54,7 @@ enum TerminalEvent: Equatable, Codable {
   case updateToken(accessToken: String)
   case updateConfig(config: Config)
   case promptWaiver(waiverData: WaiverData)
+  case promptEmergencyContact(emergencyContactData: EmergencyContactData)
 }
 
 struct TerminalBadge: Identifiable, Equatable, Codable {
@@ -209,6 +216,9 @@ struct ApisClient {
   /// Publish the signed waiver signature over MQTT so the admin frontend can relay it to the backend.
   /// Parameters: config, orderReference, signaturePngBase64, replyTopic
   var publishWaiverSigned: (Config, String, String, String) async throws -> Void
+  /// Publish emergency contact info over MQTT so the admin frontend can relay it to the backend.
+  /// Parameters: config, orderReference, name, relationship, phone, replyTopic
+  var publishEmergencyContactSaved: (Config, String, String, String, String, String) async throws -> Void
 
   var subscribeToEvents: (Config) throws -> Effect<TaskResult<TerminalEvent>>
 }
@@ -218,6 +228,7 @@ extension ApisClient: TestDependencyKey {
     requestSquareToken: { _ in },
     squareTransactionCompleted: { _, _ in true },
     publishWaiverSigned: { _, _, _, _ in },
+    publishEmergencyContactSaved: { _, _, _, _, _, _ in },
     subscribeToEvents: { _ in .none }
   )
 

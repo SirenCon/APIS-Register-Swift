@@ -19,11 +19,11 @@ struct RegSetupFeature {
   @Dependency(\.uuid) var uuid
 
   enum Mode: Equatable {
-    case acceptPayments, close, setup, waiver
+    case acceptPayments, close, setup, waiver, emergencyContact
 
     var isPresenting: Bool {
       switch self {
-      case .acceptPayments, .close, .waiver:
+      case .acceptPayments, .close, .waiver, .emergencyContact:
         return true
       default:
         return false
@@ -61,6 +61,7 @@ struct RegSetupFeature {
     var squareSetupState: SquareSetupFeature.State? = nil
     var paymentState: PaymentFeature.State? = nil
     var waiverState: WaiverFeature.State? = nil
+    var emergencyContactState: EmergencyContactFeature.State? = nil
 
     mutating func setAlert(title: String, message: String) {
       alert = AlertState {
@@ -99,6 +100,7 @@ struct RegSetupFeature {
     case squareCheckoutAction(SquareCheckoutAction)
     case paymentAction(PaymentFeature.Action)
     case waiverAction(WaiverFeature.Action)
+    case emergencyContactAction(EmergencyContactFeature.Action)
 
     enum Alert: Equatable {
       case dismiss
@@ -297,6 +299,17 @@ struct RegSetupFeature {
         return .none
       case .waiverAction:
         return .none
+
+      case .emergencyContactAction(.cancel):
+        state.regState.mode = .setup
+        state.emergencyContactState = nil
+        return .none
+      case .emergencyContactAction(.confirmResult(.success)):
+        state.regState.mode = .setup
+        state.emergencyContactState = nil
+        return .none
+      case .emergencyContactAction:
+        return .none
       }
     }
     .ifLet(\.$alert, action: \.alert)
@@ -308,6 +321,9 @@ struct RegSetupFeature {
     }
     .ifLet(\.waiverState, action: \.waiverAction) {
       WaiverFeature()
+    }
+    .ifLet(\.emergencyContactState, action: \.emergencyContactAction) {
+      EmergencyContactFeature()
     }
     #if DEBUG
       ._printChanges()
@@ -541,6 +557,15 @@ struct RegSetupFeature {
       state.regState.mode = .waiver
       return .none
 
+    case .success(.promptEmergencyContact(let ecData)):
+      guard let config = state.config else {
+        state.setAlert(title: "Error", message: "No configuration loaded.")
+        return .none
+      }
+      state.emergencyContactState = EmergencyContactFeature.State(config: config, emergencyContactData: ecData)
+      state.regState.mode = .emergencyContact
+      return .none
+
     case .failure(let error):
       state.setAlert(
         title: "Event Error",
@@ -649,6 +674,11 @@ struct RegSetupView: View {
           case .waiver:
             if let store = store.scope(state: \.waiverState, action: \.waiverAction) {
               WaiverView(store: store)
+            }
+
+          case .emergencyContact:
+            if let store = store.scope(state: \.emergencyContactState, action: \.emergencyContactAction) {
+              EmergencyContactView(store: store)
             }
 
           default:

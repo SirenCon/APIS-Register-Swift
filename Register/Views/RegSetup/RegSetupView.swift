@@ -593,7 +593,7 @@ struct RegSetupView: View {
           videoCaptureDevice: AVCaptureDevice.default(
             .builtInWideAngleCamera,
             for: .video,
-            position: .front
+            position: store.configState.preferFrontCamera ? .front : .unspecified
           )
         ) {
           store.send(
